@@ -1,0 +1,956 @@
+python agent_run.py "total eligible department"                                                   
+{
+  "final": true,
+  "status": "success",
+  "success": true,
+  "metric": "eligible_departments",
+  "data": [
+    {
+      "value": 4
+    }
+  ]
+}
+
+ python agent_run.py "total unique skus breakdown by department"                                   
+{
+  "final": true,
+  "status": "success",
+  "metric": "unique_skus",
+  "message": "Total unique SKUs in the system",        
+  "data": [
+    {
+      "value": 87
+    }
+  ]
+}
+
+python agent_run.py "total eligible employees"
+{
+  "final": true,
+  "status": "success",
+  "success": true,
+  "metric": "eligible_employees",
+  "data": [
+    {
+      "value": 33594
+    }
+  ]
+}
+
+python agent_run.py "unique skus breakdown by department"
+{
+  "final": true,
+  "status": "success",
+  "metric": "skus_by_department",
+  "filters": {},
+  "message": "SKU count by department",
+  "data": [
+    {
+      "department": "Airport Operations & Customer Services",
+      "sku_count": 42,
+      "total_entitlement_records": 42
+    },
+    {
+      "department": "Cargo",
+      "sku_count": 38,
+      "total_entitlement_records": 38
+    },
+    {
+      "department": "Engineering",
+      "sku_count": 27,
+      "total_entitlement_records": 27
+    },
+    {
+      "department": "Inflight Services",
+      "sku_count": 26,
+      "total_entitlement_records": 26
+    }
+  ]
+}
+
+python agent_run.py "SKU demand for AOCS from Sep 2025 to Aug 2026"                                    
+{
+  "final": true,
+  "status": "success",
+  "metric": "sku_demand",
+  "filters": {
+    "department": "Airport Operations & Customer Services"
+  },
+  "time_range": {
+    "from": "2025-09",
+    "to": "2026-08"
+  },
+  "specific_months": null,
+  "message": "SKU demand calculation",
+  "summary": {
+    "total_skus": 38,
+    "common_skus": 5,
+    "department_specific_skus": 33,
+    "total_quantity": 464199
+  },
+  "data": [
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Stockings - Summer",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 12,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 67140
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Name Badges - AOCS",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 16650,
+      "total_occurrences": 16650,
+      "total_quantity_needed": 49950
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Shirt FS",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 11054,
+      "total_occurrences": 11054,
+      "total_quantity_needed": 33162
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Trouser",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 11054,
+      "total_occurrences": 11054,
+      "total_quantity_needed": 33162
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Shirt HS",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 2,
+      "unique_employees": 11054,
+      "total_occurrences": 11054,
+      "total_quantity_needed": 22108
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "TIE",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 2,
+      "unique_employees": 11054,
+      "total_occurrences": 11054,
+      "total_quantity_needed": 22108
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Scarf AOCS",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 16785
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Stocking - Winter",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 16785
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Tunic",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 16785
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Ear Plug",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 16650,
+      "total_occurrences": 16650,
+      "total_quantity_needed": 16650
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Foldable Cap",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 16650,
+      "total_occurrences": 16650,
+      "total_quantity_needed": 16650
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Ramp Jacket - AOCS",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 16650,
+      "total_occurrences": 16650,
+      "total_quantity_needed": 16650
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Trouser - Srinagar",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "SXR",
+      "quantity_per_issue": 2,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 11190
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Tunic - Srinagar",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "SXR",
+      "quantity_per_issue": 2,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 11190
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Snow Boot",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "IXL",
+      "quantity_per_issue": 1,
+      "unique_employees": 11054,
+      "total_occurrences": 11054,
+      "total_quantity_needed": 11054
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "WOOLEN CAP",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 11054,
+      "total_occurrences": 11054,
+      "total_quantity_needed": 11054
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Extreme Winter Jackets",
+      "frequency": 24,
+      "sku_gender": "Both/Common",
+      "base_location": "DHM",
+      "quantity_per_issue": 1,
+      "unique_employees": 7821,
+      "total_occurrences": 7821,
+      "total_quantity_needed": 7821
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Badge - Girl Power",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Safety Shoe",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Shirt",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Snow Boot",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "IXL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Trouser",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Flat Shoe - AOCS",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Heel Shoe - AOCS",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5595,
+      "total_occurrences": 5595,
+      "total_quantity_needed": 5595
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Belt",
+      "frequency": 24,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5295,
+      "total_occurrences": 5295,
+      "total_quantity_needed": 5295
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Safety Shoe",
+      "frequency": 24,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5295,
+      "total_occurrences": 5295,
+      "total_quantity_needed": 5295
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Rain Wear Shoe",
+      "frequency": 24,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 5295,
+      "total_occurrences": 5295,
+      "total_quantity_needed": 5295
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Rain Coat",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 3234,
+      "total_occurrences": 3234,
+      "total_quantity_needed": 3234
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Sweater FS",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 3234,
+      "total_occurrences": 3234,
+      "total_quantity_needed": 3234
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Sweater Sleeve less",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 3234,
+      "total_occurrences": 3234,
+      "total_quantity_needed": 3234
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Parka Jacket AOCS",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 3234,
+      "total_occurrences": 3234,
+      "total_quantity_needed": 3234
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Quilted Jacket",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "BBI",
+      "quantity_per_issue": 1,
+      "unique_employees": 3234,
+      "total_occurrences": 3234,
+      "total_quantity_needed": 3234
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Sweater",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "AGR",
+      "quantity_per_issue": 2,
+      "unique_employees": 1537,
+      "total_occurrences": 1537,
+      "total_quantity_needed": 3074
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Belt",
+      "frequency": 24,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 2525,
+      "total_occurrences": 2525,
+      "total_quantity_needed": 2525
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Woolen Scarf - AOCS",
+      "frequency": 24,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 2525,
+      "total_occurrences": 2525,
+      "total_quantity_needed": 2525
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Overcoat",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "BBI",
+      "quantity_per_issue": 1,
+      "unique_employees": 1537,
+      "total_occurrences": 1537,
+      "total_quantity_needed": 1537
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Quilted Overcoat",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 1537,
+      "total_occurrences": 1537,
+      "total_quantity_needed": 1537
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Rain Coat",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 1537,
+      "total_occurrences": 1537,
+      "total_quantity_needed": 1537
+    }
+  ]
+}
+
+python agent_run.py "SKU demand for AOCS for september 2026 only"  
+{
+  "final": true,
+  "status": "success",
+  "metric": "sku_demand",
+  "filters": {
+    "department": "Airport Operations & Customer Services",
+    "months": [
+      "2026-09"
+    ]
+  },
+  "time_range": null,
+  "specific_months": [
+    "2026-09"
+  ],
+  "message": "SKU demand calculation",
+  "summary": {
+    "total_skus": 38,
+    "common_skus": 5,
+    "department_specific_skus": 33,
+    "total_quantity": 50515
+  },
+  "data": [
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Stockings - Summer",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 12,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 7776
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Name Badges - AOCS",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 1714,
+      "total_occurrences": 1714,
+      "total_quantity_needed": 5142
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Shirt FS",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 1066,
+      "total_occurrences": 1066,
+      "total_quantity_needed": 3198
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Trouser",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 1066,
+      "total_occurrences": 1066,
+      "total_quantity_needed": 3198
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Shirt HS",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 2,
+      "unique_employees": 1066,
+      "total_occurrences": 1066,
+      "total_quantity_needed": 2132
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "TIE",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 2,
+      "unique_employees": 1066,
+      "total_occurrences": 1066,
+      "total_quantity_needed": 2132
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Scarf AOCS",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 1944
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Stocking - Winter",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 1944
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Tunic",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 3,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 1944
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Ear Plug",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 1714,
+      "total_occurrences": 1714,
+      "total_quantity_needed": 1714
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Foldable Cap",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 1714,
+      "total_occurrences": 1714,
+      "total_quantity_needed": 1714
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Ramp Jacket - AOCS",
+      "frequency": 12,
+      "sku_gender": "Both/Common",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 1714,
+      "total_occurrences": 1714,
+      "total_quantity_needed": 1714
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Trouser - Srinagar",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "SXR",
+      "quantity_per_issue": 2,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 1296
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Tunic - Srinagar",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "SXR",
+      "quantity_per_issue": 2,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 1296
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Snow Boot",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "IXL",
+      "quantity_per_issue": 1,
+      "unique_employees": 1066,
+      "total_occurrences": 1066,
+      "total_quantity_needed": 1066
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "WOOLEN CAP",
+      "frequency": 12,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 1066,
+      "total_occurrences": 1066,
+      "total_quantity_needed": 1066
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Extreme Winter Jackets",
+      "frequency": 24,
+      "sku_gender": "Both/Common",
+      "base_location": "DHM",
+      "quantity_per_issue": 1,
+      "unique_employees": 1049,
+      "total_occurrences": 1049,
+      "total_quantity_needed": 1049
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Badge - Girl Power",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Safety Shoe",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Shirt",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Snow Boot",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "IXL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Trouser",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Flat Shoe - AOCS",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Heel Shoe - AOCS",
+      "frequency": 12,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 648,
+      "total_occurrences": 648,
+      "total_quantity_needed": 648
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Belt",
+      "frequency": 24,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 626,
+      "total_occurrences": 626,
+      "total_quantity_needed": 626
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Safety Shoe",
+      "frequency": 24,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 626,
+      "total_occurrences": 626,
+      "total_quantity_needed": 626
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Rain Wear Shoe",
+      "frequency": 24,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 626,
+      "total_occurrences": 626,
+      "total_quantity_needed": 626
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Belt",
+      "frequency": 24,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 423,
+      "total_occurrences": 423,
+      "total_quantity_needed": 423
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Woolen Scarf - AOCS",
+      "frequency": 24,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 423,
+      "total_occurrences": 423,
+      "total_quantity_needed": 423
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Sweater",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "AGR",
+      "quantity_per_issue": 2,
+      "unique_employees": 208,
+      "total_occurrences": 208,
+      "total_quantity_needed": 416
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Rain Coat",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 378,
+      "total_occurrences": 378,
+      "total_quantity_needed": 378
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Sweater FS",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 378,
+      "total_occurrences": 378,
+      "total_quantity_needed": 378
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Male Sweater Sleeve less",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 378,
+      "total_occurrences": 378,
+      "total_quantity_needed": 378
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Parka Jacket AOCS",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 378,
+      "total_occurrences": 378,
+      "total_quantity_needed": 378
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Quilted Jacket",
+      "frequency": 36,
+      "sku_gender": "Male",
+      "base_location": "BBI",
+      "quantity_per_issue": 1,
+      "unique_employees": 378,
+      "total_occurrences": 378,
+      "total_quantity_needed": 378
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Overcoat",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "BBI",
+      "quantity_per_issue": 1,
+      "unique_employees": 208,
+      "total_occurrences": 208,
+      "total_quantity_needed": 208
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Quilted Overcoat",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "AGR",
+      "quantity_per_issue": 1,
+      "unique_employees": 208,
+      "total_occurrences": 208,
+      "total_quantity_needed": 208
+    },
+    {
+      "department": "Airport Operations & Customer Services",
+      "item_name": "Female Rain Coat",
+      "frequency": 36,
+      "sku_gender": "Female",
+      "base_location": "ALL",
+      "quantity_per_issue": 1,
+      "unique_employees": 208,
+      "total_occurrences": 208,
+      "total_quantity_needed": 208
+    }
+  ]
+}
+
