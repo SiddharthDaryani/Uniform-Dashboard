@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 PROJECT_ENDPOINT = "https://6eopenai-aifoundry-np-ea.services.ai.azure.com/api/projects/6eopenai-aifoundry-np-e-project"
 AGENT_ID = "asst_vDuMomx3g6JlA2og2s6LQrgq"
-MCP_URL = "http://127.0.0.1:80001/mcp"
+MCP_URL = "http://127.0.0.1:8000/mcp"  # Fixed port to match your MCP server
 
 app = FastAPI()
 
@@ -56,7 +56,7 @@ def extract_json_from_response(raw_text: str) -> dict:
         except json.JSONDecodeError:
             continue
 
-    raise ValueError(f"Could not extract valid JSON")
+    raise ValueError(f"Could not extract valid JSON from response:\n{text[:500]}")
 
 
 def clean_payload(payload: dict) -> dict:
@@ -80,34 +80,44 @@ def clean_payload(payload: dict) -> dict:
 def dashboard_query(payload: DashboardQuery):
     """
     Dashboard API endpoint.
-    Passes user query to agent → Extracts payload → Routes to MCP → Returns to UI
-    Agent handles all parameter extraction using its configured instructions.
+    Sends user question to Azure AI Agent → Agent extracts parameters → Routes to MCP → Returns data to UI
+    
+    The agent is pre-configured with instructions in Azure AI Studio, so we only send the user's question.
     """
     try:
-        # Call Agent with just the user's question
+        # Initialize Azure AI client
         client = AIProjectClient(
             endpoint=PROJECT_ENDPOINT,
             credential=DefaultAzureCredential()
         )
 
         with client:
+            # Create a new thread for this conversation
             thread = client.agents.threads.create()
 
-            # Just send the question - agent has its own instructions configured
+            # Send ONLY the user's question - agent has its own system instructions
             client.agents.messages.create(
                 thread_id=thread.id,
                 role="user",
                 content=payload.question
             )
 
+            # Run the agent
             run = client.agents.runs.create_and_process(
                 thread_id=thread.id,
                 agent_id=AGENT_ID
             )
 
+            # Check for failures
             if hasattr(run, 'status') and run.status == "failed":
-                return {"error": "Agent processing failed", "status": "failed"}
+                error_msg = getattr(run, 'last_error', 'Unknown error')
+                return {
+                    "error": "Agent processing failed",
+                    "status": "failed",
+                    "details": str(error_msg)
+                }
 
+            # Retrieve agent's response
             messages = client.agents.messages.list(
                 thread_id=thread.id,
                 order=ListSortOrder.ASCENDING
@@ -120,30 +130,39 @@ def dashboard_query(payload: DashboardQuery):
                     break
 
         if not agent_response:
-            return {"error": "No agent response"}
+            return {"error": "No response from agent"}
 
-        # Extract and clean the JSON payload from agent
+        # Extract JSON payload from agent's response
         try:
             params_payload = extract_json_from_response(agent_response)
             params_payload = clean_payload(params_payload)
         except Exception as e:
-            return {"error": f"Failed to parse agent response: {str(e)}", "raw": agent_response}
+            return {
+                "error": f"Failed to parse agent response: {str(e)}",
+                "raw_response": agent_response[:500]
+            }
 
-        # Extract tool name and arguments
+        # Get tool name and arguments
         tool_name = params_payload.get("tool")
         arguments = params_payload.get("arguments", {})
 
         if not tool_name:
-            return {"error": "No tool specified in agent response", "payload": params_payload}
+            return {
+                "error": "No tool specified in agent response",
+                "payload": params_payload
+            }
 
-        # Clean up arguments
+        # Clean up arguments based on tool type
         if tool_name == "uniform_entitlement_kpi":
+            # Remove group_by - not supported for uniform entitlement
             arguments.pop("group_by", None)
+            
+            # Remove empty time_range
             if "time_range" in arguments and not arguments["time_range"]:
                 arguments.pop("time_range")
 
-        # Call MCP with extracted parameters
-        mcp_payload = {
+        # Prepare MCP request
+        mcp_request = {
             "jsonrpc": "2.0",
             "method": "tools/call",
             "params": {
@@ -153,56 +172,99 @@ def dashboard_query(payload: DashboardQuery):
             "id": 1
         }
 
-        response = requests.post(
+        # Call MCP server
+        mcp_response = requests.post(
             MCP_URL,
-            json=mcp_payload,
+            json=mcp_request,
             headers={
                 "Accept": "application/json, text/event-stream",
                 "Content-Type": "application/json"
             },
-            timeout=60
+            timeout=400
         )
 
-        if response.status_code != 200:
-            return {"error": f"MCP call failed: {response.status_code}", "text": response.text}
+        if mcp_response.status_code != 200:
+            return {
+                "error": f"MCP call failed with status {mcp_response.status_code}",
+                "details": mcp_response.text[:500]
+            }
 
-        # Parse and return MCP response
-        for line in response.text.splitlines():
-            if line.startswith("data:"):
-                try:
-                    data = json.loads(line.replace("data:", "").strip())
-                    result = data.get("result", {})
-                    
-                    structured = result.get("structuredContent", {})
-                    content = structured.get("content", [])
-                    
-                    if content and len(content) > 0:
-                        for item in content:
-                            if item.get("type") == "json":
-                                return item["json"]
-                    
-                    for item in result.get("content", []):
-                        if item.get("type") == "text":
-                            try:
-                                parsed = json.loads(item["text"])
-                                for c in parsed.get("content", []):
-                                    if c.get("type") == "json":
-                                        return c["json"]
-                            except:
-                                pass
-                except Exception as e:
-                    continue
+        # Parse MCP response (handles streaming format)
+        for line in mcp_response.text.splitlines():
+            if not line.startswith("data:"):
+                continue
 
-        return {"error": "No valid MCP response found"}
+            try:
+                raw_data = line.replace("data:", "", 1).strip()
+                envelope = json.loads(raw_data)
+                result = envelope.get("result", {})
+
+                # CASE 1: structuredContent
+                structured = result.get("structuredContent", {})
+                structured_content = structured.get("content", [])
+
+                for item in structured_content:
+                    if item.get("type") == "json":
+                        return item["json"]
+
+                # CASE 2: content → text → embedded JSON
+                for item in result.get("content", []):
+                    if item.get("type") == "text":
+                        try:
+                            parsed = json.loads(item["text"])
+                            for c in parsed.get("content", []):
+                                if c.get("type") == "json":
+                                    return c["json"]
+                        except:
+                            pass
+
+            except Exception as e:
+                continue
+
+        return {
+            "error": "No valid JSON response found from MCP",
+            "raw_response": mcp_response.text[:500]
+        }
 
     except Exception as e:
-        return {"error": str(e), "type": type(e).__name__}
+        return {
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
 
 
 @app.get("/health")
 def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "Dashboard API"}
+    return {
+        "status": "healthy",
+        "service": "Dashboard API",
+        "agent_id": AGENT_ID,
+        "mcp_url": MCP_URL
+    }
+
+
+@app.get("/")
+def root():
+    """Root endpoint with API information"""
+    return {
+        "service": "Uniform Management Dashboard API",
+        "version": "1.0.0",
+        "endpoints": {
+            "query": "POST /dashboard/query",
+            "health": "GET /health"
+        },
+        "usage": {
+            "method": "POST",
+            "endpoint": "/dashboard/query",
+            "body": {
+                "question": "your question here"
+            },
+            "example": {
+                "question": "total SKUs for AOCS"
+            }
+        }
+    }
 
 
 if __name__ == "__main__":
