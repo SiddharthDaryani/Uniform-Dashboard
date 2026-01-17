@@ -1,0 +1,7 @@
+fastapi
+pydantic
+requests
+azure-ai-projects
+azure-identity
+fastmcp
+uvicorn
