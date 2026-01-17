@@ -35,8 +35,27 @@ export interface EligibleEmployeeSummary {
   eligibilityPercentage: number;
 }
 
-export const departments = ['Engineering', 'Sales', 'Marketing', 'HR', 'Finance', 'Operations', 'Customer Support', 'Product'];
-export const locations = ['New York', 'San Francisco', 'Chicago', 'Austin', 'Seattle', 'Boston', 'Denver', 'Miami'];
+export const departments = [
+  'Airport Operations & Customer Services',
+  'Cargo',
+  'Engineering',
+  'Flight Operations',
+  'Flight Safety',
+  'Inflight Services',
+  'Operation Control Center',
+];
+
+export const locations = [
+  "Bengaluru", "Gurgaon", "Delhi", "Mumbai", "Chandigarh", "Chennai",
+  "Kolkata", "Hyderabad", "Pune", "Durgapur", "Jabalpur", "Indore",
+  "Thiruvananthapuram", "Ahmedabad", "Jaipur", "Kochi", "Bhubaneswar",
+  "Srinagar", "Nagpur", "Imphal", "Dehradun", "Lucknow", "Silchar",
+  "Agartala", "Patna", "Gorakhpur", "Ranchi", "Deoghar", "Agatti",
+  "Raipur", "Bagdogra", "Guwahati", "Vadodara", "Tuticorin", "Jharsuguda",
+  "Port Blair", "Singapore", "Visakhapatnam", "Jammu", "Madurai", "Goa",
+  "Bhopal", "Varanasi", "Nasik", "Allahabad", "Amritsar", "Kozhikode",
+  "Adampur", "Salem", "Tashkent"
+].sort();
 export const genders: ('Male' | 'Female')[] = ['Male', 'Female'];
 export const statuses: ('Active' | 'Inactive')[] = ['Active', 'Inactive'];
 export const months = ['Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024', 'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'];
@@ -80,13 +99,19 @@ export const getDepartmentSummary = (): DepartmentSummary[] => {
 
 // Department eligibility data
 export const getDepartmentEligibility = (): DepartmentEligibility[] => {
+  const eligibleDepts = [
+    'Airport Operations & Customer Services',
+    'Cargo',
+    'Engineering',
+    'Inflight Services',
+  ];
   return departments.map(dept => {
     const deptEmployees = employees.filter(e => e.department === dept);
     const activeCount = deptEmployees.filter(e => e.status === 'Active').length;
-    const eligibleCount = deptEmployees.filter(e => e.isEligible).length;
+    // const eligibleCount = deptEmployees.filter(e => e.isEligible).length;
     return {
       department: dept,
-      isEligible: eligibleCount / deptEmployees.length > 0.5,
+      isEligible: eligibleDepts.includes(dept),
       totalEmployees: deptEmployees.length,
       activeEmployees: activeCount,
     };

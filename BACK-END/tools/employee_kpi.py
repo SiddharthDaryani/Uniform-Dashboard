@@ -33,7 +33,7 @@ WITH entitlement_departments AS (
 # MAIN KPI FUNCTION
 # =================================================
 def employee_kpi_mcp(params):
-    metric = params.get("metric", "total")
+    metric = params.get("metric", "total").strip().lower()
     group_by = params.get("group_by", "none")
     filters = params.get("filters", {})
     time_range = params.get("time_range")
@@ -74,8 +74,12 @@ def employee_kpi_mcp(params):
         where.append("LOWER(baselocationtext) = LOWER(:location)")
         sql_params["location"] = filters["location"]
 
+    if filters.get("status"):
+        where.append("LOWER(status) = LOWER(:status)")
+        sql_params["status"] = filters["status"]
+
     # =================================================
-    # 🟦 KPI: DEPARTMENT ELIGIBILITY
+    # METRIC-BASED LOGIC
     # =================================================
     if metric == "department_eligibility":
         sql = f"""
@@ -112,33 +116,72 @@ def employee_kpi_mcp(params):
             "metric": metric,
             "data": db.execute_query(sql, sql_params)
         }
+    elif metric == "eligible_employees":
+        select = "COUNT(DISTINCT e.iga_code) AS value"
+        group = ""
+        
+        # Local where for this block
+        local_where = list(where)
 
-    # =================================================
-    # 🟩 KPI: ELIGIBLE EMPLOYEES (CARD)
-    # =================================================
-    if metric == "eligible_employees":
+        if group_by == "gender":
+            select = "e.gender_picklist_label AS gender, COUNT(DISTINCT e.iga_code) AS value"
+            group = "GROUP BY e.gender_picklist_label"
+        elif group_by == "department":
+            select = "e.function AS department, COUNT(DISTINCT e.iga_code) AS value"
+            group = "GROUP BY e.function"
+        elif group_by == "location":
+            select = "e.baselocationtext AS location, COUNT(DISTINCT e.iga_code) AS value"
+            group = "GROUP BY e.baselocationtext"
+        elif group_by == "status":
+            select = "e.status AS label, COUNT(DISTINCT e.iga_code) AS value"
+            group = "GROUP BY e.status"
+            
+        # Default to active only if no explicit status filter AND not grouping by status
+        if not filters.get("status") and group_by != "status":
+            local_where.append("LOWER(e.status) = 'active'")
+
         sql = f"""
         {ELIGIBLE_DEPARTMENTS_CTE}
-        SELECT COUNT(DISTINCT e.iga_code) AS value
+        SELECT {select}
         FROM {EMPLOYEE_TABLE} e
         JOIN entitlement_departments ed
             ON LOWER(e.function) = LOWER(ed.normalized_department)
-        WHERE LOWER(e.status) = 'active'
-          AND {' AND '.join(where)}
+        WHERE {' AND '.join(local_where)}
+        {group}
         """
+        data = db.execute_query(sql, sql_params)
+        
+        final_metric = metric
+        final_group_by = group_by
+        
+        if group_by == "status":
+            final_metric = "status"
+            final_group_by = "none" # Match user expectation
+            
+            # Ensure both Active and Inactive are present
+            labels = {str(item.get("label", "")).lower(): item for item in data}
+            new_data = []
+            
+            # Use specific labels from user's request
+            status_map = {"active": "Active", "inactive": "Inactive"}
+            for key, display in status_map.items():
+                if key in labels:
+                    # Clean up the label if needed
+                    labels[key]["label"] = display
+                    new_data.append(labels[key])
+                else:
+                    new_data.append({"label": display, "value": 0})
+            data = new_data
+
         return {
             "success": True,
-            "metric": metric,
-            "data": db.execute_query(sql, sql_params)
+            "metric": final_metric,
+            "group_by": final_group_by,
+            "filters": filters,
+            "time_range": time_range,
+            "data": data
         }
-
-    # =================================================
-    # 🟥 NEW: INELIGIBLE EMPLOYEES (CARD)
-    # =================================================
-    if metric == "ineligible_employees":
-        """
-        Count of active employees NOT in eligible departments
-        """
+    elif metric == "ineligible_employees":
         sql = f"""
         {ELIGIBLE_DEPARTMENTS_CTE}
         SELECT COUNT(DISTINCT e.iga_code) AS value
@@ -154,11 +197,7 @@ def employee_kpi_mcp(params):
             "metric": metric,
             "data": db.execute_query(sql, sql_params)
         }
-
-    # =================================================
-    # 🟩 KPI: ELIGIBLE DEPARTMENTS (CARD)
-    # =================================================
-    if metric == "eligible_departments":
+    elif metric == "eligible_departments":
         sql = f"""
         {ELIGIBLE_DEPARTMENTS_CTE}
         SELECT COUNT(DISTINCT normalized_department) AS value
@@ -169,37 +208,28 @@ def employee_kpi_mcp(params):
             "metric": metric,
             "data": db.execute_query(sql, {})
         }
-
-    # =================================================
-    # 🟩 KPI: ELIGIBILITY BY GENDER
-    # =================================================
-    if metric == "eligibility_by_gender":
+    elif metric == "total_departments":
         sql = f"""
-        {ELIGIBLE_DEPARTMENTS_CTE}
-        SELECT
-            e.gender_picklist_label AS gender,
-            COUNT(DISTINCT e.iga_code) AS eligible_employees
-        FROM {EMPLOYEE_TABLE} e
-        JOIN entitlement_departments ed
-            ON LOWER(e.function) = LOWER(ed.normalized_department)
-        WHERE LOWER(e.status) = 'active'
-          AND {' AND '.join(where)}
-        GROUP BY e.gender_picklist_label
+        SELECT COUNT(DISTINCT function) AS value
+        FROM {EMPLOYEE_TABLE}
         """
         return {
             "success": True,
             "metric": metric,
-            "data": db.execute_query(sql, sql_params)
+            "data": db.execute_query(sql, {})
         }
-
-    # =================================================
-    # 🟩 KPI: ELIGIBILITY TREND
-    # =================================================
-    if metric == "eligibility_trend":
-        trend_where = [
-            "LOWER(e.status) = 'active'",
-            "ed.normalized_department IS NOT NULL"
-        ]
+    elif metric == "eligibility_by_gender":
+        # Redirect to unified grouping logic
+        params["metric"] = "eligible_employees"
+        params["group_by"] = "gender"
+        return employee_kpi_mcp(params)
+    elif metric == "eligibility_trend":
+        trend_where = list(where)
+        # Default to active if no status filter provided
+        if not filters.get("status"):
+            trend_where.append("LOWER(e.status) = 'active'")
+        
+        trend_where.append("ed.normalized_department IS NOT NULL")
 
         if time_range:
             trend_where.append(
@@ -225,12 +255,11 @@ def employee_kpi_mcp(params):
             "metric": metric,
             "data": db.execute_query(sql, sql_params)
         }
-
-    # =================================================
-    # 🟩 KPI: HEADCOUNT VS ELIGIBILITY
-    # =================================================
-    if metric == "headcount_vs_eligibility":
-        trend_where = ["LOWER(e.status) = 'active'"]
+    elif metric == "headcount_vs_eligibility":
+        trend_where = list(where)
+        # Default to active if no status filter provided
+        if not filters.get("status"):
+            trend_where.append("LOWER(e.status) = 'active'")
 
         if time_range:
             trend_where.append(
@@ -262,124 +291,123 @@ def employee_kpi_mcp(params):
             "metric": metric,
             "data": db.execute_query(sql, sql_params)
         }
-
-    # =================================================
-    # 🟨 STANDARD KPIs - FIXED FOR SPECIFIC QUERIES
-    # =================================================
-    
-    # Total employees
-    if metric == "total":
-        select = "COUNT(DISTINCT iga_code) AS value"
-        group = ""
-
-    # Active employees only
-    elif metric == "active":
-        select = "COUNT(DISTINCT iga_code) AS value"
-        where.append("LOWER(status) = 'active'")
-        group = ""
-    
-    # Inactive employees only
-    elif metric == "inactive":
-        select = "COUNT(DISTINCT iga_code) AS value"
-        where.append("LOWER(status) = 'inactive'")
-        group = ""
-
-    # Status breakdown (both active and inactive)
-    elif metric == "status":
-        select = "status AS label, COUNT(DISTINCT iga_code) AS value"
-        group = "GROUP BY status"
-    
+    elif metric == "department_summary":
+        sql = f"""
+        SELECT
+            function AS department,
+            COUNT(DISTINCT iga_code) AS total_employees,
+            COUNT(DISTINCT CASE WHEN LOWER(status) = 'active' THEN iga_code END) AS active_employees,
+            COUNT(DISTINCT CASE WHEN LOWER(status) = 'inactive' THEN iga_code END) AS inactive_employees,
+            COUNT(DISTINCT baselocationtext) AS number_of_locations_present
+        FROM {EMPLOYEE_TABLE} e
+        WHERE {' AND '.join(where)}
+        GROUP BY function
+        ORDER BY function
+        """
+        return {
+            "success": True,
+            "metric": metric,
+            "group_by": "department",
+            "filters": filters,
+            "data": db.execute_query(sql, sql_params)
+        }
     else:
-        select = "COUNT(DISTINCT iga_code) AS value"
-        group = ""
-
-    # -------------------------------------------------
-    # 📂 Grouping logic
-    # -------------------------------------------------
-    if group_by == "department":
-        if metric == "inactive":
-            # Only inactive employees by department
-            select = """
-                function AS department,
-                COUNT(DISTINCT iga_code) AS inactive_employees
-            """
-            where.append("LOWER(status) = 'inactive'")
+        # =================================================
+        # 🟨 STANDARD KPIs - FIXED FOR SPECIFIC QUERIES
+        # =================================================
+        
+        if metric == "total":
+            select = "COUNT(DISTINCT iga_code) AS value"
+            group = ""
         elif metric == "active":
-            # Only active employees by department
-            select = """
-                function AS department,
-                COUNT(DISTINCT iga_code) AS active_employees
-            """
-            where.append("LOWER(status) = 'active'")
+            select = "COUNT(DISTINCT iga_code) AS value"
+            if not filters.get("status"):
+                where.append("LOWER(status) = 'active'")
+            group = ""
+        elif metric == "inactive":
+            select = "COUNT(DISTINCT iga_code) AS value"
+            if not filters.get("status"):
+                where.append("LOWER(status) = 'inactive'")
+            group = ""
+        elif metric == "status":
+            select = "status AS label, COUNT(DISTINCT iga_code) AS value"
+            group = "GROUP BY status"
         else:
-            # Full breakdown
-            select = """
-                function AS department,
-                COUNT(DISTINCT iga_code) AS total_employees,
-                COUNT(DISTINCT CASE WHEN LOWER(status) = 'active' THEN iga_code END) AS active_employees,
-                COUNT(DISTINCT CASE WHEN LOWER(status) = 'inactive' THEN iga_code END) AS inactive_employees,
-                COUNT(DISTINCT baselocationtext) AS number_of_locations_present
-            """
-        group = "GROUP BY function"
+            select = "COUNT(DISTINCT iga_code) AS value"
+            group = ""
 
-    elif group_by == "gender":
-        if metric == "inactive":
-            # Only inactive employees by gender
-            select = """
-                gender_picklist_label AS gender,
-                COUNT(DISTINCT iga_code) AS inactive_employees
-            """
-            where.append("LOWER(status) = 'inactive'")
-        elif metric == "active":
-            # Only active employees by gender
-            select = """
-                gender_picklist_label AS gender,
-                COUNT(DISTINCT iga_code) AS active_employees
-            """
-            where.append("LOWER(status) = 'active'")
-        else:
-            # Full breakdown
-            select = """
-                gender_picklist_label AS gender,
-                COUNT(DISTINCT iga_code) AS value
-            """
-        group = "GROUP BY gender_picklist_label"
-    
-    elif group_by == "location":
-        if metric == "inactive":
-            # Only inactive employees by location
-            select = """
-                baselocationtext AS location,
-                COUNT(DISTINCT iga_code) AS inactive_employees
-            """
-            where.append("LOWER(status) = 'inactive'")
-        elif metric == "active":
-            # Only active employees by location
-            select = """
-                baselocationtext AS location,
-                COUNT(DISTINCT iga_code) AS active_employees
-            """
-            where.append("LOWER(status) = 'active'")
-        else:
-            # Full breakdown
-            select = """
-                baselocationtext AS location,
-                COUNT(DISTINCT iga_code) AS value
-            """
-        group = "GROUP BY baselocationtext"
+        # -------------------------------------------------
+        # 📂 Grouping logic
+        # -------------------------------------------------
+        if group_by == "department":
+            if metric == "inactive":
+                select = """
+                    function AS department,
+                    COUNT(DISTINCT iga_code) AS inactive_employees,
+                    COUNT(DISTINCT baselocationtext) AS number_of_locations_present
+                """
+            elif metric == "active":
+                select = """
+                    function AS department,
+                    COUNT(DISTINCT iga_code) AS active_employees,
+                    COUNT(DISTINCT baselocationtext) AS number_of_locations_present
+                """
+            else:
+                select = """
+                    function AS department,
+                    COUNT(DISTINCT iga_code) AS total_employees,
+                    COUNT(DISTINCT CASE WHEN LOWER(status) = 'active' THEN iga_code END) AS active_employees,
+                    COUNT(DISTINCT CASE WHEN LOWER(status) = 'inactive' THEN iga_code END) AS inactive_employees,
+                    COUNT(DISTINCT baselocationtext) AS number_of_locations_present
+                """
+            group = "GROUP BY function"
+        elif group_by == "gender":
+            if metric == "inactive":
+                select = """
+                    gender_picklist_label AS gender,
+                    COUNT(DISTINCT iga_code) AS inactive_employees
+                """
+            elif metric == "active":
+                select = """
+                    gender_picklist_label AS gender,
+                    COUNT(DISTINCT iga_code) AS active_employees
+                """
+            else:
+                select = """
+                    gender_picklist_label AS gender,
+                    COUNT(DISTINCT iga_code) AS value
+                """
+            group = "GROUP BY gender_picklist_label"
+        elif group_by == "location":
+            if metric == "inactive":
+                select = """
+                    baselocationtext AS location,
+                    COUNT(DISTINCT iga_code) AS inactive_employees
+                """
+            elif metric == "active":
+                select = """
+                    baselocationtext AS location,
+                    COUNT(DISTINCT iga_code) AS active_employees
+                """
+            else:
+                select = """
+                    baselocationtext AS location,
+                    COUNT(DISTINCT iga_code) AS value
+                """
+            group = "GROUP BY baselocationtext"
 
-    sql = f"""
-    SELECT {select}
-    FROM {EMPLOYEE_TABLE}
-    WHERE {' AND '.join(where)}
-    {group}
-    """
+        sql = f"""
+        SELECT {select}
+        FROM {EMPLOYEE_TABLE}
+        WHERE {' AND '.join(where)}
+        {group}
+        """
 
-    return {
-        "success": True,
-        "metric": metric,
-        "group_by": group_by,
-        "filters": filters,
-        "time_range": time_range,
-        "data": db.execute_query(sql, sql_params)
-    }
+        return {
+            "success": True,
+            "metric": metric,
+            "group_by": group_by,
+            "filters": filters,
+            "time_range": time_range,
+            "data": db.execute_query(sql, sql_params)
+        }

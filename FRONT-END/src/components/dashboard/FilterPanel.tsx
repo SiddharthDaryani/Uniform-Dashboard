@@ -6,6 +6,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FilterOption {
   value: string;
@@ -18,7 +25,7 @@ interface FilterConfig {
   options: FilterOption[];
   value: string | string[];
   onChange: (value: any) => void;
-  multi?: boolean; // ✅ NEW
+  multi?: boolean;
 }
 
 interface FilterPanelProps {
@@ -109,18 +116,22 @@ export function FilterPanel({
                 </PopoverContent>
               </Popover>
             ) : (
-              /* 🔹 SINGLE SELECT (unchanged) */
-              <select
-                className="h-9 w-full rounded-md border px-2 text-sm"
+              /* 🔹 SINGLE SELECT (Shadcn) */
+              <Select
                 value={filter.value as string}
-                onChange={(e) => filter.onChange(e.target.value)}
+                onValueChange={filter.onChange}
               >
-                {filter.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue placeholder={`Select ${filter.label}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {filter.options.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
         ))}

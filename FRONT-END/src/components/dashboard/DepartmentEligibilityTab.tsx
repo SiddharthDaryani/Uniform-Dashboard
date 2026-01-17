@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import { Building2, CheckCircle, XCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query'; // ✅ IMPORT
+import { fetchDashboardData } from '@/lib/api'; // ✅ IMPORT
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -14,21 +17,50 @@ import {
 import { KPICard } from './KPICard';
 import { ChartCard } from './ChartCard';
 import { DataTable } from './DataTable';
-import { getDepartmentEligibility, DepartmentEligibility } from '@/data/mockData';
+import { DepartmentEligibility } from '@/data/mockData';
 
 export function DepartmentEligibilityTab() {
-  const departmentEligibility = useMemo(
-    () => getDepartmentEligibility(),
-    []
-  );
+  // ================= API QUERIES =================
+  const { data: totalDeptsData, isLoading: isLoadingTotal } = useQuery({
+    queryKey: ['totalDepts'],
+    queryFn: () => fetchDashboardData('total number of departments'),
+  });
 
-  // ================= KPI VALUES =================
-  const totalDepartments = departmentEligibility.length;
-  const eligibleDepartments = departmentEligibility.filter(
-    (d) => d.isEligible
-  ).length;
-  const ineligibleDepartments =
-    totalDepartments - eligibleDepartments;
+  const { data: eligibleDeptsData, isLoading: isLoadingEligDepts } = useQuery({
+    queryKey: ['eligibleDepts_page'],
+    queryFn: () => fetchDashboardData('total number of eligible departments'),
+  });
+
+  const { data: deptEligibilityData } = useQuery({
+    queryKey: ['deptEligibilityTable'],
+    queryFn: () => fetchDashboardData('department eligibility summary'),
+  });
+
+  // KPI Calculations
+  const totalDepartments = totalDeptsData?.data?.[0]?.value || 0;
+  const eligibleDepartments = eligibleDeptsData?.data?.[0]?.value || 0;
+  const ineligibleDepartments = totalDepartments - eligibleDepartments;
+
+  // Table Data Processing
+  // Hardcoded eligible departments
+  const ELIGIBLE_DEPARTMENTS = [
+    'Airport Operations & Customer Services',
+    'Cargo',
+    'Engineering',
+    'Inflight Services'
+  ];
+
+  const departmentEligibility = deptEligibilityData?.data?.map((item: any) => {
+    const deptName = item.department || item.name;
+
+    return {
+      department: deptName,
+      totalEmployees: item.total_employees || item.totalEmployees || item.total || 0,
+      activeEmployees: item.active_employees || item.activeEmployees || item.active || 0,
+      // Hardcode eligibility based on department name
+      isEligible: ELIGIBLE_DEPARTMENTS.includes(deptName),
+    };
+  }) || [];
 
   // ================= CHART DATA (EXACT FIRST UI) =================
   const chartData = [
@@ -50,11 +82,10 @@ export function DepartmentEligibilityTab() {
       header: 'Eligibility Status',
       render: (item: DepartmentEligibility) => (
         <span
-          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-            item.isEligible
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}
+          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.isEligible
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+            }`}
         >
           {item.isEligible ? (
             <>
@@ -91,12 +122,23 @@ export function DepartmentEligibilityTab() {
           value={totalDepartments}
           icon={Building2}
         />
+        <KPICard
+          title="Eligible Departments"
+          value={isLoadingEligDepts ? '...' : eligibleDepartments}
+          variant="success"
+          icon={CheckCircle}
+        />
+        <KPICard
+          title="Ineligible Departments"
+          value={isLoadingEligDepts ? '...' : ineligibleDepartments}
+          variant="destructive"
+          icon={XCircle}
+        />
       </div>
 
       {/* ================= BAR CHART ================= */}
       <ChartCard
         title="Number of Eligible Departments vs Number of Ineligible Departments"
-        description="Department eligibility breakdown"
       >
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={chartData}>
@@ -121,7 +163,7 @@ export function DepartmentEligibilityTab() {
               fill="hsl(var(--success))"
             >
               {chartData.map((entry, index) => (
-                <cell
+                <Cell
                   key={index}
                   fill={
                     entry.name === 'Eligible Departments'

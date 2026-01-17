@@ -1,5 +1,8 @@
 from database import db
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 EMPLOYEE_TABLE = "active_and_inactive_employees_details_as_on_01_09_2025_sheet1"
 ENTITLEMENT_TABLE = "entitlement_detail_entitlement"
@@ -30,6 +33,9 @@ WITH entitlement_data AS (
 
 def uniform_entitlement_kpi_mcp(params):
     metric = params.get("metric")
+    logger.info(f"uniform_entitlement_kpi_mcp received metric: '{metric}'")
+    logger.info(f"Is metric == 'entitlement_coverage_matrix'? {metric == 'entitlement_coverage_matrix'}")
+
     filters = params.get("filters", {})
     time_range = params.get("time_range") or {}
 
@@ -37,9 +43,6 @@ def uniform_entitlement_kpi_mcp(params):
     where_ent = ["1=1"]
     sql_params = {}
 
-    # ========================================
-    # NEW: UNIQUE SKUs COUNT
-    # ========================================
     if metric == "unique_skus":
         """
         Total count of unique SKU items in the system
@@ -55,11 +58,7 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "Total unique SKUs in the system",
             "data": db.execute_query(sql, sql_params)
         }
-
-    # ========================================
-    # NEW: SKUs BY DEPARTMENT
-    # ========================================
-    if metric == "skus_by_department":
+    elif metric == "skus_by_department":
         """
         SKU count grouped by department
         """
@@ -84,11 +83,7 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "SKU count by department",
             "data": db.execute_query(sql, sql_params)
         }
-
-    # ========================================
-    # NEW: SKUs BY GENDER
-    # ========================================
-    if metric == "skus_by_gender":
+    elif metric == "skus_by_gender":
         """
         SKU count grouped by gender
         """
@@ -117,11 +112,7 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "SKU count by gender",
             "data": db.execute_query(sql, sql_params)
         }
-
-    # ========================================
-    # NEW: SKUs BY LOCATION
-    # ========================================
-    if metric == "skus_by_location":
+    elif metric == "skus_by_location":
         """
         SKU count grouped by base location
         """
@@ -145,11 +136,7 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "SKU count by location",
             "data": db.execute_query(sql, sql_params)
         }
-
-    # ========================================
-    # NEW: SKUs BY FREQUENCY
-    # ========================================
-    if metric == "skus_by_frequency":
+    elif metric == "skus_by_frequency":
         """
         SKU count grouped by frequency (how often items are issued)
         """
@@ -180,11 +167,48 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "SKU count by frequency",
             "data": db.execute_query(sql, sql_params)
         }
+    elif metric == "entitlement_coverage_matrix":
+        # First, get all unique, normalized departments
+        dept_sql = f"""
+        {ENTITLEMENT_CTE}
+        SELECT DISTINCT department FROM entitlement_data ORDER BY department
+        """
+        dept_rows = db.execute_query(dept_sql, {})
+        departments = [row['department'] for row in dept_rows]
 
-    # ========================================
-    # IMPROVED: SKU DEMAND WITH SPECIFIC MONTHS
-    # ========================================
-    if metric == "sku_demand":
+        # Build dynamic CASE statements for the pivot
+        case_statements = []
+        for dept in departments:
+            # The column name needs to be quoted to handle special characters
+            new_line = "MAX(CASE WHEN department = '" + dept.replace("'", "''") + "' THEN 1 ELSE 0 END) AS \"" + dept + "\" "
+            case_statements.append(new_line)
+
+        case_sql = ', '.join(case_statements)
+
+        # Build the final pivot query
+        sql = f"""
+        {ENTITLEMENT_CTE}
+        SELECT
+            item_name AS \"SKU Name\",
+            {case_sql}
+        FROM entitlement_data
+        GROUP BY item_name
+        ORDER BY item_name
+        """
+
+        result_data = db.execute_query(sql, {})
+        
+        matrix_data = {}
+        for row in result_data:
+            sku_name = row.pop("SKU Name")
+            matrix_data[sku_name] = row
+
+        return {
+            "metric": metric,
+            "message": "Entitlement coverage matrix showing which SKUs apply to which departments.",
+            "data": matrix_data
+        }
+    elif metric == "sku_demand":
         """
         Calculate SKU demand based on:
         - Employee joining dates
@@ -352,11 +376,7 @@ def uniform_entitlement_kpi_mcp(params):
             },
             "data": result_data
         }
-
-    # ========================================
-    # EXISTING METRICS (kept for compatibility)
-    # ========================================
-    if metric == "employees_with_demand":
+    elif metric == "employees_with_demand":
         if not time_range.get("from") or not time_range.get("to"):
             return {"metric": metric, "message": "Please add date range", "data": []}
 
@@ -388,7 +408,7 @@ def uniform_entitlement_kpi_mcp(params):
               AND (UPPER(ed.base_location) = 'ALL' OR LOWER(ed.base_location) = LOWER(e.baselocationtext))
               AND EXISTS (
                   SELECT 1 
-                  FROM (
+                  FROM ( 
                       SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 
                       UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
                       UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8
@@ -423,8 +443,35 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "Total unique employees who will receive items in date range",
             "data": db.execute_query(sql, sql_params)
         }
-
-    if metric == "total_employees":
+    elif metric == "all_uniform_entitlements":
+        """
+        Complete list of uniform entitlement rules for local filtering.
+        """
+        sql = f"""
+        {ENTITLEMENT_CTE}
+        SELECT 
+            item_name AS sku,
+            department,
+            CASE 
+                WHEN gender = 'M' THEN 'Male'
+                WHEN gender = 'F' THEN 'Female'
+                WHEN gender = 'B' THEN 'All'
+                ELSE gender
+            END AS gender,
+            base_location,
+            frequency
+        FROM entitlement_data
+        WHERE {' AND '.join(where_ent)}
+        ORDER BY department, item_name
+        """
+        return {
+            "final": True,
+            "status": "success",
+            "metric": metric,
+            "message": "Complete list of uniform entitlement rules for local filtering.",
+            "data": db.execute_query(sql, sql_params)
+        }
+    elif metric == "total_employees":
         if filters.get("department"):
             where_emp.append("LOWER(e.function) = LOWER(:dept)")
             sql_params["dept"] = filters["department"]
@@ -454,5 +501,5 @@ def uniform_entitlement_kpi_mcp(params):
             "message": "Total active employees",
             "data": db.execute_query(sql, sql_params)
         }
-
-    raise ValueError(f"Unsupported metric: {metric}")
+    else:
+        raise ValueError(f"Unsupported metric: {metric}")

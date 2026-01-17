@@ -140,7 +140,10 @@ METRIC SELECTION FOR EMPLOYEE KPI
 "inactive employees" / "how many inactive"
 → metric = "inactive"
 
-"active vs inactive" / "status breakdown" / "employee status"
+"active vs inactive" / "status breakdown" / "employee status" / "department summary"
+→ metric = "status"
+
+"summary of departments"
 → metric = "status"
 
 "eligible employees" / "how many eligible"
@@ -149,16 +152,19 @@ METRIC SELECTION FOR EMPLOYEE KPI
 "ineligible employees"
 → metric = "ineligible_employees"
 
-"eligible departments" / "which departments are eligible" / "how many departments"
+"total departments" / "how many departments" (ONLY for ALL departments, NOT eligible ones)
+→ metric = "total_departments"
+
+"eligible departments" / "which departments are eligible" / "total number of eligible departments"
 → metric = "eligible_departments"
 
-"department eligibility" / "eligibility by department"
+"department eligibility" / "eligibility by department" / "eligible employees breakdown by department" / "eligible employees by department"
 → metric = "department_eligibility"
 
-"eligibility by gender"
+"eligibility by gender" / "eligible employees by gender" / "eligible employees breakdown by gender"
 → metric = "eligibility_by_gender"
 
-"eligibility trend" / "eligible employees over time"
+"eligibility trend" / "eligible employees over time" / "eligible employees breakdown by month" / "eligible employees by issuance month"
 → metric = "eligibility_trend"
 
 "headcount vs eligibility"
@@ -173,7 +179,7 @@ METRIC SELECTION FOR UNIFORM ENTITLEMENT
 "total SKUs" / "count of SKUs" / "how many SKUs" / "number of SKUs"
 → metric = "unique_skus"
 
-"total SKUs for [department]" / "SKUs by department" / "department-wise SKUs"
+"total SKUs for [department]" / "SKUs by department" / "department-wise SKUs" / "total unique SKUs breakdown by department"
 → metric = "skus_by_department"
 
 "SKUs by gender" / "gender-wise SKUs" / "male vs female SKUs"
@@ -184,6 +190,9 @@ METRIC SELECTION FOR UNIFORM ENTITLEMENT
 
 "SKUs by frequency" / "frequency-wise SKUs" / "how often items issued"
 → metric = "skus_by_frequency"
+
+"entitlement coverage matrix"
+→ metric = "entitlement_coverage_matrix"
 
 **DEMAND QUERIES:**
 
@@ -197,6 +206,14 @@ METRIC SELECTION FOR UNIFORM ENTITLEMENT
 
 "employees with demand" / "how many will receive items"
 → metric = "employees_with_demand"
+
+"how many unique employees will get uniforms" / "unique employees with demand" / "number of employees receiving items"
+→ metric = "employees_with_demand" (MUST include time_range)
+
+**ENTITLEMENT DETAILS:**
+
+"all uniform entitlement details" / "entitlement details" / "list all entitlements"
+→ metric = "all_uniform_entitlements"
 
 "total employees in department"
 → metric = "total_employees"
@@ -239,11 +256,15 @@ FILTER RULES (CRITICAL)
 2. If department is NOT mentioned, DO NOT add department filter
 3. If location is NOT mentioned, DO NOT add location filter
 4. If gender is NOT mentioned, DO NOT add gender filter
-5. NEVER use placeholder values like "..."
+5. If status is NOT mentioned, DO NOT add status filter (it defaults to 'active' in the tool)
+6. ALWAYS include a filter if explicitly mentioned, EVEN IF you are grouping by the same field (e.g., breakdown by gender and gender Male).
+7. NEVER use placeholder values like "..."
 
 Examples:
 ✅ "total active employees" → {{"metric": "active", "filters": {{}}}}
 ✅ "active employees in AOCS" → {{"metric": "active", "filters": {{"department": "Airport Operations & Customer Services"}}}}
+✅ "ineligible employees with status active" → {{"metric": "ineligible_employees", "filters": {{"status": "active"}}}}
+✅ "active employees in Delhi" → {{"metric": "active", "filters": {{"location": "Delhi"}}}}
 ❌ "total active employees" → DO NOT add {{"location": "..."}}
 
 --------------------------------------------------
@@ -279,7 +300,7 @@ OPTION 3 - No time specified:
 GROUP_BY RULES (EMPLOYEE KPI ONLY)
 --------------------------------------------------
 
-"by department" / "department-wise" / "per department"
+"by department" / "department-wise" / "per department" / "department summary"
 → group_by = "department"
 
 "by gender" / "gender-wise" / "male vs female"
@@ -287,6 +308,9 @@ GROUP_BY RULES (EMPLOYEE KPI ONLY)
 
 "by location" / "location-wise" / "per location"
 → group_by = "location"
+
+"summary" / "status breakdown" / "active vs inactive" (for individual counts)
+→ group_by = "status"
 
 If NOT mentioned → OMIT group_by
 
@@ -340,7 +364,109 @@ Query: "which departments are eligible"
   }}
 }}
 
+Query: "eligible employees breakdown by gender"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "eligible_employees",
+    "group_by": "gender"
+  }}
+}}
+
+Query: "department summary"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "status",
+    "group_by": "department"
+  }}
+}}
+
+Query: \"total number of eligible departments\"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "eligible_departments"
+  }}
+}}
+
+Query: "eligible employees breakdown by issuance month in Cargo department in Bengaluru with status Inactive"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "eligibility_trend",
+    "filters": {{
+      "department": "Cargo",
+      "location": "Bengaluru",
+      "status": "Inactive"
+    }}
+  }}
+}}
+
+Query: "active employees breakdown by gender"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "active",
+    "group_by": "gender"
+  }}
+}}
+
+Query: "eligible employees breakdown by gender"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "eligible_employees",
+    "group_by": "gender"
+  }}
+}}
+
+Query: "eligible employee summary in Cargo department in Delhi and gender Female"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "eligible_employees",
+    "group_by": "status",
+    "filters": {{
+      "department": "Cargo",
+      "location": "Delhi",
+      "gender": "Female"
+    }}
+  }}
+}}
+
+Query: "eligible employees breakdown by department"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "department_eligibility"
+  }}
+}}
+
+Query: "active employees breakdown by gender in Cargo department in Bengaluru with status Inactive and gender Male"
+{{
+  "tool": "employee_kpi",
+  "arguments": {{
+    "metric": "active",
+    "group_by": "gender",
+    "filters": {{
+      "department": "Cargo",
+      "location": "Bengaluru",
+      "status": "Inactive",
+      "gender": "Male"
+    }}
+  }}
+}}
+
 **UNIFORM ENTITLEMENT EXAMPLES:**
+
+Query: "entitlement coverage matrix"
+{{
+  "tool": "uniform_entitlement_kpi",
+  "arguments": {{
+    "metric": "entitlement_coverage_matrix"
+  }}
+}}
 
 Query: "total SKUs"
 {{
@@ -427,6 +553,14 @@ Query: "how many unique SKUs in Inflight Services"
     "filters": {{
       "department": "Inflight Services"
     }}
+  }}
+}}
+
+Query: "all uniform entitlement details"
+{{
+  "tool": "uniform_entitlement_kpi",
+  "arguments": {{
+    "metric": "all_uniform_entitlements"
   }}
 }}
 

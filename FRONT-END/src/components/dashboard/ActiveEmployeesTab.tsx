@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Users, UserCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query'; // ✅ IMPORT
+import { fetchDashboardData } from '@/lib/api'; // ✅ IMPORT
 import {
   PieChart,
   Pie,
@@ -20,12 +22,11 @@ import { ChartCard } from './ChartCard';
 import { DataTable } from './DataTable';
 
 import {
-  employees,
+
   departments,
   locations,
   genders,
   statuses,
-  months,
   DepartmentSummary,
 } from '@/data/mockData';
 
@@ -41,101 +42,154 @@ const COLORS = [
 export function ActiveEmployeesTab() {
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // ✅ MULTI-SELECT CHECKBOX FILTERS
-  const [deptFilter, setDeptFilter] = useState<string[]>([]);
-  const [locationFilter, setLocationFilter] = useState<string[]>([]);
+  // ✅ SINGLE-SELECT FILTERS
+  const [deptFilter, setDeptFilter] = useState('All');
+  const [locationFilter, setLocationFilter] = useState('All');
 
   const [genderFilter, setGenderFilter] = useState('all');
-  const [monthFilter, setMonthFilter] = useState('all');
 
-  // ================= FILTERED DATA =================
-  const filteredEmployees = useMemo(() => {
-    return employees.filter((emp) => {
-      if (statusFilter !== 'all' && emp.status !== statusFilter) return false;
-      if (deptFilter.length > 0 && !deptFilter.includes(emp.department))
-        return false;
-      if (locationFilter.length > 0 && !locationFilter.includes(emp.location))
-        return false;
-      if (genderFilter !== 'all' && emp.gender !== genderFilter) return false;
-      if (monthFilter !== 'all' && emp.issuanceMonth !== monthFilter)
-        return false;
-      return true;
-    });
-  }, [statusFilter, deptFilter, locationFilter, genderFilter, monthFilter]);
+  // ================= QUERY CONSTRUCTION =================
+  const constructQuery = (baseMetric: string) => {
+    let query = baseMetric;
+    if (deptFilter !== 'All') query += ` in ${deptFilter} department`;
+    if (locationFilter !== 'All') query += ` in ${locationFilter}`;
+    if (statusFilter !== 'all') query += ` with status ${statusFilter}`;
+    if (genderFilter !== 'all') query += ` and gender ${genderFilter}`;
+    return query;
+  };
 
-  // ================= KPI VALUES =================
-  const totalEmployees = filteredEmployees.length;
-  const activeEmployees = filteredEmployees.filter(
-    (e) => e.status === 'Active'
-  ).length;
+  // ================= API QUERIES =================
+  const { data: totalEmployeesData, isLoading: isLoadingTotal } = useQuery({
+    queryKey: ['totalEmployees', deptFilter, locationFilter, statusFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('total number of employees')),
+  });
 
-  // ================= CHART DATA =================
+  const { data: activeEmployeesData, isLoading: isLoadingActive } = useQuery({
+    queryKey: ['activeEmployees', deptFilter, locationFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('total number of active employees')),
+  });
+
+  // Charts
+  const { data: statusDistData } = useQuery({
+    queryKey: ['statusDist', deptFilter, locationFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('total employees breakdown by status')),
+  });
+
+  const { data: activeByDeptData } = useQuery({
+    queryKey: ['activeByDept', deptFilter, locationFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('active employees breakdown by department')),
+  });
+
+  const { data: activeByGenderData } = useQuery({
+    queryKey: ['activeByGender', deptFilter, locationFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('active employees breakdown by gender')),
+  });
+
+  const { data: eligibleByMonthData } = useQuery({
+    queryKey: ['eligibleByMonth', deptFilter, locationFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('eligible employees breakdown by issuance month')),
+  });
+
+  // Table
+  const { data: deptSummaryData } = useQuery({
+    queryKey: ['deptSummary', deptFilter, locationFilter, genderFilter],
+    queryFn: () => fetchDashboardData(constructQuery('department summary')),
+  });
+
+
+  // ================= DATA PROCESSING =================
+  // Extract KPIs
+  const totalEmployees = totalEmployeesData?.data?.[0]?.value || 0;
+  const activeEmployees = activeEmployeesData?.data?.[0]?.value || 0;
+
+  // Process Chart Data
+  // Fix for Status Distribution:
+  // If the backend returns a list of departments with active/inactive counts instead of a status summary,
+  // we must aggregate it ourselves.
   const statusDistribution = useMemo(() => {
-    const active = filteredEmployees.filter(
-      (e) => e.status === 'Active'
-    ).length;
-    return [
-      { name: 'Active', value: active },
-      { name: 'Inactive', value: filteredEmployees.length - active },
-    ];
-  }, [filteredEmployees]);
+    if (!statusDistData?.data) return [];
 
-  const activeByDept = useMemo(() => {
-    return departments.map((dept) => ({
-      name: dept.length > 10 ? dept.slice(0, 10) + '...' : dept,
-      fullName: dept,
-      value: filteredEmployees.filter(
-        (e) => e.department === dept && e.status === 'Active'
-      ).length,
+    // Check if the response is trying to be "per department" (has departments)
+    // or if it's already a status list (has status/name).
+    const isDeptList = statusDistData.data[0]?.department;
+
+    if (isDeptList) {
+      // Aggregate Active/Inactive from department list
+      const totalActive = statusDistData.data.reduce((sum: number, item: any) => sum + (item.active_employees || 0), 0);
+      const totalInactive = statusDistData.data.reduce((sum: number, item: any) => sum + (item.inactive_employees || 0), 0);
+      return [
+        { name: 'Active', value: totalActive },
+        { name: 'Inactive', value: totalInactive },
+      ];
+    }
+
+    // Otherwise assume it's a direct status list
+    return statusDistData.data.map((item: any) => ({
+      name: item.label === null ? "None" : (item.label || item.status || item.name),
+      value: item.value || item.count || 0,
     }));
-  }, [filteredEmployees]);
+  }, [statusDistData]);
 
-  const activeByGender = useMemo(() => {
-    return genders.map((gender) => ({
-      name: gender,
-      count: filteredEmployees.filter(
-        (e) => e.gender === gender && e.status === 'Active'
-      ).length,
-    }));
-  }, [filteredEmployees]);
 
-  const eligibleByMonth = useMemo(() => {
-    return months.map((month) => ({
-      month: month.split(' ')[0],
-      count: filteredEmployees.filter(
-        (e) => e.issuanceMonth === month && e.isEligible
-      ).length,
-    }));
-  }, [filteredEmployees]);
+  const activeByDept = activeByDeptData?.data?.map((item: any) => ({
+    name: item.department ? (item.department.length > 10 ? item.department.slice(0, 10) + '...' : item.department) : item.name,
+    fullName: item.department || item.name,
+    // Backend returns 'active_employees' for 'active breakdown'
+    value: item.active_employees || item.value || item.count || 0,
+  })) || [];
 
-  // ================= TABLE =================
+  const activeByGender = activeByGenderData?.data?.map((item: any) => ({
+    name: item.gender || item.name,
+    // Backend might return snake_case or different keys (active_employees, inactive_employees, etc.)
+    count: item.value || item.count || item.active_employees || item.inactive_employees || 0,
+  })) || [];
+
+  const eligibleByMonth = eligibleByMonthData?.data?.map((item: any) => ({
+    month: item.issuanceMonth || item.month || item.name || item.department || 'Total',
+    count: item.eligible_employees || item.active_employees || item.value || item.count || 0,
+  })) || [];
+
+  // Process Table Data
   const departmentSummary: DepartmentSummary[] = useMemo(() => {
-    return departments
-      .map((dept) => {
-        const deptEmployees = filteredEmployees.filter(
-          (e) => e.department === dept
-        );
-        const activeCount = deptEmployees.filter(
-          (e) => e.status === 'Active'
-        ).length;
-        const uniqueLocations = new Set(
-          deptEmployees.map((e) => e.location)
-        ).size;
+    if (!deptSummaryData?.data) return [];
 
-        return {
-          department: dept,
-          totalEmployees: deptEmployees.length,
-          activeEmployees: activeCount,
-          inactiveEmployees: deptEmployees.length - activeCount,
-          activePercentage:
-            deptEmployees.length > 0
-              ? Math.round((activeCount / deptEmployees.length) * 100)
-              : 0,
-          locationsPresent: uniqueLocations,
-        };
-      })
-      .filter((d) => d.totalEmployees > 0);
-  }, [filteredEmployees]);
+    // Case 1: Data is a list of status labels (Active/Inactive) for a filtered selection
+    const firstItem = deptSummaryData.data[0];
+    if (firstItem && firstItem.label && firstItem.value !== undefined) {
+      const active = deptSummaryData.data.find((i: any) => i.label === 'Active')?.value || 0;
+      const inactive = deptSummaryData.data.find((i: any) => i.label === 'Inactive')?.value || 0;
+      const total = active + inactive;
+
+      return [{
+        department: deptFilter !== 'All' ? deptFilter : (locationFilter !== 'All' ? locationFilter : 'Filtered Results'),
+        totalEmployees: total,
+        activeEmployees: active,
+        inactiveEmployees: inactive,
+        activePercentage: total ? Math.round((active / total) * 100) : 0,
+        locationsPresent: locationFilter !== 'All' ? 1 : 0,
+      }];
+    }
+
+    // Case 2: Standard department list
+    return deptSummaryData.data.map((item: any) => {
+      const total = item.total_employees || item.totalEmployees || item.total || 0;
+      const active = item.active_employees || item.activeEmployees || item.active || 0;
+      const inactive = (item.inactive_employees !== undefined && item.inactive_employees !== null)
+        ? item.inactive_employees
+        : (total - active);
+
+      return {
+        department: item.department || item.name || 'Unknown',
+        totalEmployees: total,
+        activeEmployees: active,
+        inactiveEmployees: inactive,
+        activePercentage: item.active_percentage || item.activePercentage ||
+          (total ? Math.round((active / total) * 100) : 0),
+        locationsPresent: item.number_of_locations_present || item.locationsPresent || item.locations || 1,
+      };
+    });
+  }, [deptSummaryData, deptFilter, locationFilter]);
+
 
   // ================= FILTER CONFIG =================
   const filters = [
@@ -152,18 +206,22 @@ export function ActiveEmployeesTab() {
     {
       id: 'department',
       label: 'Department',
-      options: departments.map((d) => ({ value: d, label: d })),
+      options: [
+        { value: 'All', label: 'All' },
+        ...departments.map((d) => ({ value: d, label: d })),
+      ],
       value: deptFilter,
       onChange: setDeptFilter,
-      multi: true,
     },
     {
       id: 'location',
       label: 'Location',
-      options: locations.map((l) => ({ value: l, label: l })),
+      options: [
+        { value: 'All', label: 'All' },
+        ...locations.map((l) => ({ value: l, label: l })),
+      ],
       value: locationFilter,
       onChange: setLocationFilter,
-      multi: true,
     },
     {
       id: 'gender',
@@ -175,24 +233,13 @@ export function ActiveEmployeesTab() {
       value: genderFilter,
       onChange: setGenderFilter,
     },
-    {
-      id: 'month',
-      label: 'Issuance Month',
-      options: [
-        { value: 'all', label: 'All Months' },
-        ...months.map((m) => ({ value: m, label: m })),
-      ],
-      value: monthFilter,
-      onChange: setMonthFilter,
-    },
   ];
 
   const resetFilters = () => {
     setStatusFilter('all');
-    setDeptFilter([]);
-    setLocationFilter([]);
+    setDeptFilter('All');
+    setLocationFilter('All');
     setGenderFilter('all');
-    setMonthFilter('all');
   };
 
   // ================= UI =================
@@ -202,10 +249,14 @@ export function ActiveEmployeesTab() {
 
       {/* KPI CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <KPICard title="Total Employees" value={totalEmployees} icon={Users} />
+        <KPICard
+          title="Total Employees"
+          value={isLoadingTotal ? '...' : totalEmployees}
+          icon={Users}
+        />
         <KPICard
           title="Active Employees"
-          value={activeEmployees}
+          value={isLoadingActive ? '...' : activeEmployees}
           icon={UserCheck}
           variant="success"
         />
@@ -217,9 +268,14 @@ export function ActiveEmployeesTab() {
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie data={statusDistribution} innerRadius={60} outerRadius={100} dataKey="value">
-                {statusDistribution.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
+                {statusDistribution.map((entry, index) => {
+                  let color = COLORS[index % COLORS.length];
+                  if (entry.name === 'Active') color = 'hsl(var(--success))'; // Green
+                  if (entry.name === 'Inactive') color = 'hsl(var(--destructive))'; // Red
+                  if (entry.name === 'None') color = 'hsl(var(--muted))'; // Grey
+
+                  return <Cell key={`cell-${index}`} fill={color} />;
+                })}
               </Pie>
               <Tooltip />
               <Legend />
@@ -242,7 +298,7 @@ export function ActiveEmployeesTab() {
         </ChartCard>
       </div>
 
-      {/* ✅ CHARTS ROW 2 (RESTORED) */}
+      {/* ✅ CHARTS ROW 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Eligible Employee Count by Issuance Month">
           <ResponsiveContainer width="100%" height={280}>
@@ -285,4 +341,6 @@ export function ActiveEmployeesTab() {
       />
     </div>
   );
+
+
 }

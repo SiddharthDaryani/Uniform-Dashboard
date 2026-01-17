@@ -32,9 +32,22 @@ export function AnalyticsChartCard({
       <ResponsiveContainer width="100%" height="100%">
         {type === "bar" && (
           <BarChart data={data}>
-            <XAxis dataKey={xKey} />
-            <YAxis />
-            <Tooltip />
+            <XAxis
+              dataKey={xKey}
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+              interval={0}
+            />
+            <YAxis
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--popover))',
+                borderColor: 'hsl(var(--border))',
+                color: 'hsl(var(--popover-foreground))'
+              }}
+              cursor={{ fill: 'hsl(var(--muted))' }}
+            />
             <Bar
               dataKey={yKey}
               fill="#2563eb"

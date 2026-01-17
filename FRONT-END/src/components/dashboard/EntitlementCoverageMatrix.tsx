@@ -1,88 +1,29 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchDashboardData } from "@/lib/api";
+import { departments } from "@/data/mockData";
 
 type MatrixRow = {
   sku: string;
-  Administration?: number;
-  IT?: number;
-  Logistics?: number;
-  Maintenance?: number;
-  Production?: number;
-  "Quality Control"?: number;
-  Security?: number;
-  Warehouse?: number;
+  [key: string]: number | string;
 };
 
-const MOCK_MATRIX_DATA: MatrixRow[] = [
-  {
-    sku: "Safety Boots",
-    Administration: 18,
-    IT: 36,
-    Logistics: 20,
-    Maintenance: 39,
-    Production: 21,
-    Security: 19,
-    Warehouse: 19,
-  },
-  {
-    sku: "Hard Hat",
-    Administration: 22,
-    IT: 35,
-    Logistics: 27,
-    Maintenance: 37,
-    Production: 35,
-    "Quality Control": 9,
-    Security: 7,
-  },
-  {
-    sku: "Coveralls",
-    Administration: 25,
-    Maintenance: 11,
-    Production: 50,
-    "Quality Control": 25,
-  },
-  {
-    sku: "Safety Gloves",
-    Administration: 42,
-    IT: 41,
-    Logistics: 36,
-    Production: 16,
-    "Quality Control": 22,
-  },
-  {
-    sku: "Hi-Vis Vest",
-    Administration: 46,
-    IT: 15,
-    Logistics: 6,
-    Maintenance: 40,
-  },
-  {
-    sku: "Safety Goggles",
-    Maintenance: 22,
-    Production: 24,
-    "Quality Control": 25,
-    Security: 23,
-    Warehouse: 37,
-  },
-];
+interface MatrixProps {
+  data: any[];
+  isLoading: boolean;
+}
 
-const DEPARTMENTS = [
-  "Administration",
-  "IT",
-  "Logistics",
-  "Maintenance",
-  "Production",
-  "Quality Control",
-  "Security",
-  "Warehouse",
-];
-
-export function EntitlementCoverageMatrix() {
+export function EntitlementCoverageMatrix({ data, isLoading }: MatrixProps) {
   const [search, setSearch] = useState("");
 
-  const filteredData = MOCK_MATRIX_DATA.filter((row) =>
-    row.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return data.filter((row) => {
+      const skuName = row?.sku || '';
+      return skuName.toLowerCase().includes(search.toLowerCase());
+    });
+  }, [data, search]);
 
   return (
     <div className="rounded-lg border bg-card">
@@ -111,7 +52,7 @@ export function EntitlementCoverageMatrix() {
               <th className="px-4 py-3 text-left font-medium">
                 SKU Name
               </th>
-              {DEPARTMENTS.map((dept) => (
+              {departments.map((dept) => (
                 <th
                   key={dept}
                   className="px-4 py-3 text-center font-medium"
@@ -123,36 +64,42 @@ export function EntitlementCoverageMatrix() {
           </thead>
 
           <tbody>
-            {filteredData.map((row) => (
-              <tr
-                key={row.sku}
-                className="border-b last:border-none"
-              >
-                <td className="px-4 py-3 font-medium">
-                  {row.sku}
+            {isLoading ? (
+              <tr>
+                <td colSpan={departments.length + 1} className="p-6 text-center text-muted-foreground">
+                  Loading matrix data...
                 </td>
-
-                {DEPARTMENTS.map((dept) => (
-                  <td
-                    key={dept}
-                    className="px-4 py-3 text-center"
-                  >
-                    {row[dept as keyof MatrixRow] !== undefined ? (
-                      <span className="inline-flex min-w-[32px] justify-center rounded bg-muted px-2 py-1">
-                        {row[dept as keyof MatrixRow]}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                ))}
               </tr>
-            ))}
+            ) : filteredData.length > 0 ? (
+              filteredData.map((row) => (
+                <tr
+                  key={row.sku}
+                  className="border-b last:border-none"
+                >
+                  <td className="px-4 py-3 font-medium">
+                    {row.sku || 'N/A'}
+                  </td>
 
-            {filteredData.length === 0 && (
+                  {departments.map((dept) => (
+                    <td
+                      key={dept}
+                      className="px-4 py-3 text-center"
+                    >
+                      {row[dept] !== undefined && row[dept] !== null ? (
+                        <span className="inline-flex min-w-[32px] justify-center rounded bg-muted px-2 py-1">
+                          {row[dept]}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td
-                  colSpan={DEPARTMENTS.length + 1}
+                  colSpan={departments.length + 1}
                   className="p-6 text-center text-muted-foreground"
                 >
                   No SKUs found
